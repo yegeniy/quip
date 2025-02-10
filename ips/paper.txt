@@ -1,0 +1,23 @@
+Please create a 10-minute reading session for this paper, with precise timing. Do it one minute per turn. Each minute should contain approximately 200 words of dense, meaningful content (about 2 paragraphs). Here is an Example Structure:
+
+Minutes 1-3: Core innovation and historical context
+What problem existed
+How this paper solved it
+Key technical details
+Minutes 4-6: Implementation details
+Architecture specifics
+Training methodology
+Critical design decisions
+Minutes 7-8: Results and validation
+Key experimental findings
+Breakthrough metrics
+Comparative advantages
+Minutes 9-10: Impact and limitations
+Why this matters
+Known limitations
+Future directions
+
+Please write enough content that each section actually takes its allocated minutes to read carefully and comprehend. Mark each section with its intended reading duration. I will be timing this, so ensure each minute contains roughly 200 words of meaningful content. Focus on the most important concepts first
+To pace yourself. Only generate one minute at a time.
+
+${paper}

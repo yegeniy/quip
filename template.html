@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Template Generator</title>
+  <style>
+    body{margin:20px;font-family:sans-serif;}
+    #container{display:flex;flex-direction:column;gap:10px;max-width:40em;}
+    textarea{width:100%;min-height:600px;margin-top:10px;}
+    .input-group{display:flex;gap:10px;align-items:center;}
+    label{min-width:100px;}
+  </style>
+</head>
+<body>
+  <div id="container">
+    <textarea>__QUIP__</textarea>
+    <div id="inputs"></div>
+  </div>
+  <script>
+    const templateName=window.location.pathname.split('/')[2];
+    const textarea=document.querySelector('textarea');
+    const inputsDiv=document.getElementById('inputs');
+    
+    const template=''; // Empty template placeholder
+    
+    const variables=[...template.matchAll(/\${(\w+)}/g)]
+      .map(m=>m[1])
+      .filter((v,i,a)=>a.indexOf(v)===i);
+    
+    variables.forEach(v=>{
+      const div=document.createElement('div');
+      div.className='input-group';
+      div.innerHTML=`<label for="${v}">${v}:</label><input type="text" id="${v}" name="${v}">`;
+      inputsDiv.appendChild(div);
+    });
+    
+    const updateTemplate=()=>variables.map(v=>[
+      v,document.getElementById(v).value
+    ]).reduce((o,[k,v])=>(o[k]=v,o),{});
+    
+    document.querySelectorAll('input')
+      .forEach(i=>i.addEventListener('input',updateTemplate));
+    updateTemplate();
+  </script>
+</body>
+</html>
