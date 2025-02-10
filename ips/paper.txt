@@ -20,4 +20,4 @@ Future directions
 Please write enough content that each section actually takes its allocated minutes to read carefully and comprehend. Mark each section with its intended reading duration. I will be timing this, so ensure each minute contains roughly 200 words of meaningful content. Focus on the most important concepts first
 To pace yourself. Only generate one minute at a time.
 
-${paper}
+{link}

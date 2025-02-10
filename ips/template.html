@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QUIP</title>
+  <style>
+    body{margin:20px;font-family:sans-serif;}
+    #container{display:flex;flex-direction:column;gap:10px;max-width:40em;}
+    textarea{width:100%;min-height:600px;margin-top:10px;}
+    .input-group{display:flex;gap:10px;align-items:start;}
+    label{min-width:100px;padding-top:5px;}
+    .input-group textarea{min-height:60px;} /* Input textareas smaller than main */
+  </style>
+</head>
+<body>
+  <div id="inputs"></div>
+  <div id="container">
+    <textarea id="prompt"></textarea>
+  </div>
+  <script>
+    const textarea = document.getElementById('prompt');
+    const inputsDiv = document.getElementById('inputs');
+    
+    // The QUIP __VAR__ gets replaced with make ips/%.txt -> $*
+    // It uses f-string {} for placeholders
+    const originalTemplate = `__QUIP__`;
+
+    textarea.value = originalTemplate;
+    
+    function getQueryParams() {
+      return Object.fromEntries(
+        new URLSearchParams(window.location.search)
+      );
+    }
+    
+    function extractVariables(text) {
+      return [...text.matchAll(/{(\w+)}/g)]
+        .map(m => m[1])
+        .filter((v, i, a) => a.indexOf(v) === i);
+    }
+    
+    function createInputs() {
+      const variables = extractVariables(originalTemplate);
+      const params = getQueryParams();
+      inputsDiv.innerHTML = '';
+      
+      variables.forEach(v => {
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.innerHTML = `
+          <label for="${v}">${v}:</label>
+          <textarea id="${v}" name="${v}">${params[v] || ''}</textarea>
+        `;
+        inputsDiv.appendChild(div);
+      });
+      
+      // Add auto-select to all textareas
+      document.querySelectorAll('textarea').forEach(ta => {
+        ta.addEventListener('focus', e => e.target.select());
+        ta.addEventListener('input', updateTemplate);
+      });
+      
+      updateTemplate();
+    }
+    
+    function updateTemplate() {
+      let result = originalTemplate;
+      const variables = extractVariables(originalTemplate);
+      
+      variables.forEach(v => {
+        const value = document.getElementById(v)?.value || '';
+        result = result.replaceAll(`{${v}}`, value);
+      });
+      
+      textarea.value = result;
+    }
+    
+    // Add auto-select to main textarea
+    textarea.addEventListener('focus', e => e.target.select());
+    
+    createInputs();
+  </script>
+</body>
+</html>

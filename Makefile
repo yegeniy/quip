@@ -1,22 +1,20 @@
-SHELL: /bin/bash
+SHELL := /bin/bash
 
-## <nbdev>
-init:
-	brew install nbdev
-	nbdev_install_hooks
-
-all: build
+all: build index
 
 build:
-	for f in *.ipynb; do nbdev_export $f quip; done
-## </nbdev>
+	make ips/*.txt
 
+index:
+	for f in $$(ls *.html); do \
+	  echo "<li><a href=\"$$f\">$$f</a></li>"; \
+	done > index.html
 
-# Interpolated Prompts
-ips/%.txt: FORCE template.html
-	@content=$$(cat template.html); \
+# ips -> Interpolated Prompts
+ips/%.txt: FORCE ips/template.html
+	@content=$$(cat ips/template.html); \
 	before=$${content%%__QUIP__*}; \
 	after=$${content##*__QUIP__}; \
-	echo "$$before$$(cat $@)$$after" > $*
+	echo "$$before$$(cat $@)$$after" > $*.html
 
 FORCE:
