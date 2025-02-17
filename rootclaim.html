@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>QUIP</title>
+  <style>
+    body{margin:20px;font-family:sans-serif;}
+    #container{display:flex;flex-direction:column;gap:10px;}
+    textarea{width:100%;min-height:600px;margin-top:10px;width:80ch;}
+    .input-group{display:flex;gap:10px;align-items:start;}
+    label{min-width:100px;padding-top:5px;}
+    .input-group textarea{min-height:60px;} /* Input textareas smaller than main */
+  </style>
+</head>
+<body>
+  <div id="container">
+    <!-- Will be populated by JavaScript -->
+  </div>
+  <script>
+    const templates = [
+            {
+        'rootclaim.0': 
+`## I want to analyze a question using structured probabilistic inference following the Rootclaim method. Please help me:
+
+1. First establish baseline probabilities
+2. Evaluate each piece of evidence systematically
+3. Show Bayesian updating calculations
+4. Consider key uncertainties
+5. Provide a final probability estimate with confidence level
+
+Please confirm you understand this approach before I present my question.`
+      },
+      {
+        'rootclaim.1': 
+`## For the following analysis, please use this structured format:
+
+1. HYPOTHESIS FORMATION
+- List competing hypotheses
+- Establish prior probability based on base rates
+- Show your baseline calculations
+
+2. EVIDENCE EVALUATION
+For each piece of evidence:
+- P(E|H) - probability if hypothesis true
+- P(E|~H) - probability if hypothesis false
+- Likelihood ratio calculation
+- Show impact on probability
+
+3. BAYESIAN UPDATING
+- Show each step of probability updates
+- Include intermediate calculations
+- Explain major probability shifts
+
+4. UNCERTAINTY ANALYSIS
+- List key uncertainties
+- Assess their potential impact
+- Consider alternative scenarios
+
+5. FINAL ASSESSMENT
+- Provide final probability estimate
+- State confidence level
+- Explain key factors
+- Make clear betting recommendation if applicable
+
+Are you ready for my question?`
+      },
+      {
+        'rootclaim.2': 
+`## {QUESTION}`
+      },
+      {
+        'rootclaim.3': 
+`## so, succinctly, what's the final bet? 50:50 stakes. Yes or No?`
+      },
+
+    ]
+
+    function getQueryParams() {
+      return Object.fromEntries(new URLSearchParams(window.location.search))
+    }
+
+    function extractVariables(text) {
+      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]
+        .map(m => ({
+          name: m[1],
+          isArray: m[0].endsWith('*}')
+        }));
+    }
+
+    function createInputs() {
+      const container = document.getElementById('container');
+      container.innerHTML = '';
+      const params = getQueryParams();
+      
+      const processedVars = new Set();
+      const varDeps = new Map();
+      
+      templates.forEach(t => {
+        const templateName = Object.keys(t)[0];
+        const templateText = t[templateName];
+        const vars = extractVariables(templateText);
+        
+        vars.forEach(({name}) => {
+          if (!processedVars.has(name)) {
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.innerHTML = `
+              <label for="${name}">${name}:</label>
+              <textarea id="${name}" name="${name}">${params[name] || ''}</textarea>
+            `;
+            container.appendChild(div);
+            processedVars.add(name);
+            
+            const input = document.getElementById(name);
+            input.addEventListener('focus', e => e.target.select());
+            input.addEventListener('input', () => {
+              updateDependentTemplates(name, varDeps);
+            });
+          }
+          
+          if (!varDeps.has(name)) {
+            varDeps.set(name, new Set());
+          }
+          varDeps.get(name).add(templateName);
+        });
+
+        const arrayVar = vars.find(v => v.isArray);
+        if (arrayVar) {
+          const templateContainer = document.createElement('div');
+          templateContainer.id = `${templateName}-container`;
+          container.appendChild(templateContainer);
+          const lines = (params[arrayVar.name] || '').split('\n').filter(Boolean);
+          updateArrayTemplate(templateName, templateText, arrayVar.name, lines);
+        } else {
+          const div = document.createElement('div');
+          div.className = 'input-group';
+          div.innerHTML = `
+            <label for="${templateName}">${templateName}:</label>
+            <textarea id="${templateName}" name="${templateName}">${templateText}</textarea>
+          `;
+          container.appendChild(div);
+          
+          // Add focus handler to regular template
+          const textarea = div.querySelector('textarea');
+          textarea.addEventListener('focus', e => e.target.select());
+        }
+      });
+      
+      Object.keys(params).forEach(param => {
+        updateDependentTemplates(param, varDeps);
+      });
+    }
+
+    function updateArrayTemplate(templateName, templateText, arrayVarName, lines) {
+      const container = document.getElementById(`${templateName}-container`);
+      if (!container) return;
+      
+      const values = Object.fromEntries(
+        Array.from(document.querySelectorAll('textarea'))
+          .map(input => [input.id, input.value])
+      );
+      
+      container.innerHTML = '';
+      
+      lines.forEach((line, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        const instanceId = `${templateName}-${index}`;
+        
+        let processedText = templateText;
+        const vars = extractVariables(templateText);
+        vars.forEach(({name, isArray}) => {
+          if (!isArray) {
+            processedText = processedText.replace(
+              new RegExp(`{${name}}`, 'g'), 
+              values[name] || ''
+            );
+          }
+        });
+        
+        processedText = processedText.replace(`{${arrayVarName}*}`, line);
+        
+        div.innerHTML = `
+          <label for="${instanceId}">${templateName}[${index}]:</label>
+          <textarea id="${instanceId}" name="${instanceId}">${processedText}</textarea>
+        `;
+        container.appendChild(div);
+        
+        // Add focus handler to array template instance
+        const textarea = div.querySelector('textarea');
+        textarea.addEventListener('focus', e => e.target.select());
+      });
+    }
+
+    function updateDependentTemplates(changedVar, varDeps) {
+      const values = Object.fromEntries(
+        Array.from(document.querySelectorAll('textarea'))
+          .map(input => [input.id, input.value])
+      );
+
+      const dependentTemplates = varDeps.get(changedVar) || new Set();
+      dependentTemplates.forEach(templateName => {
+        const template = templates.find(t => Object.keys(t)[0] === templateName);
+        if (!template) return;
+
+        const text = template[templateName];
+        const vars = extractVariables(text);
+        const arrayVar = vars.find(v => v.isArray);
+
+        if (arrayVar) {
+          // Handle array template
+          const lines = (values[arrayVar.name] || '').split('\n').filter(Boolean);
+          updateArrayTemplate(templateName, text, arrayVar.name, lines);
+        } else {
+          // Handle regular template
+          const elem = document.getElementById(templateName);
+          if (elem) {
+            let result = text;
+            vars.forEach(({name}) => {
+              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || '');
+            });
+            elem.value = result;
+          }
+        }
+      });
+    }
+    createInputs()
+  </script>
+</body>
+</html>

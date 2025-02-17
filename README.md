@@ -6,6 +6,10 @@
 
 ### Quick Start
 
+https://yegeniy.github.io/quip/rootclaim.html?QUESTION=paper%20clips%20by%20end%20of%20year
+
+### Instructions
+
 1. Go to https://yegeniy.github.io/quip
 2. Pick any quip. But not index.html or template.html - those are just for show.
 3. Fill in inputs in the form.
