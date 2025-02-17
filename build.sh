@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# Interpolate prompts in ips/ to generate standalone HTML quips bia template.html
+# We interpolate prompts in ips/
+# Into standalone HTML quips
+# Till all your base are paper clips
 for name in $(ls ips/ | cut -d. -f1 | sort -u); do
   echo $name
   
