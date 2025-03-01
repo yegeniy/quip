@@ -1,0 +1,30 @@
+I need to convert this code into a "literate programming" style annotations with
+insightful architectural commentary. Please:
+
+1. Format each line as: "code (padded to 80 chars)    // comment (max 37 chars)"
+- Total line width should be exactly 120 characters 
+- Format: printf("%-80s// %s\n", code, comment);
+
+2. For the comments: 
+- Don't just restate what the code does
+- Provide architectural insights, design patterns, and "why" explanations
+- Focus on system relationships, data flow, and engineering decisions
+- Write as a principal engineer would, elevating understanding
+- Use full comment lines or blocks for complex concepts
+
+3. Preserve the exact original code structure and formatting
+- Only add the comments, don't refactor or change the code itself
+- Maintain all whitespace, indentation, and line breaks
+
+4. For multi-line statements (like template literals):
+- Keep the original formatting, annotating as needed.
+- Ensure the comment doesn't wind up rendered inside the literal.
+- You may break up long lines into multi-line statements with vertical
+  whitespace, if appropriate for the annotation.
+
+
+ Here's the code to convert:
+
+\`\`\`
+{CODE}
+\`\`\`
