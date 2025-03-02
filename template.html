@@ -30,7 +30,7 @@
     // Extracts variable references from template strings using regex
     // Variables can be regular {varName} or array-type {varName*}
     function extractVariables(text) {                                           // Parses template syntax into data model
-      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                    // Regex captures variable name and type
+      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Regex captures variable name and type
         .map(m => ({                                                            // Transforms matches to structured data
           name: m[1],                                                           // Name without the curly braces
           isArray: m[0].endsWith('*}')                                          // Flag for array-type variables
@@ -140,8 +140,8 @@
         
         // Replace the array variable with the current line
         processedText = processedText.replace(`{${arrayVarName}*}`, line);      // Insert current array item
-        
-        div.innerHTML = `                                                       // Build instance HTML
+                                                                                // Build instance HTML
+        div.innerHTML = `
           <label for="${instanceId}">${templateName}[${index}]:</label>
           <textarea id="${instanceId}" name="${instanceId}">${processedText}</textarea>
         `;
@@ -190,8 +190,6 @@
         }
       });
     }
-
-    // Initialize the application
     createInputs()                                                              // Bootstrap the application
   </script>
 </body>
