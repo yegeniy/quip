@@ -16,7 +16,10 @@
     <!-- Will be populated by JavaScript -->
   </div>
   <script>
-    const templates = [
+    // QUIP is a template engine that creates a reactive UI for filling in templates with variables.
+    // Templates can reference variables with {varName} syntax and can iterate over arrays with {varName*}.
+    
+    const templates = [                                                         // Core data structure of the application
             {
         'paper.0': 
 `Consider the paper at {link}.
@@ -45,155 +48,177 @@ To pace yourself. Only generate one minute at a time.
 
 {link}`
       },
-
+ 
     ]
 
-    function getQueryParams() {
-      return Object.fromEntries(new URLSearchParams(window.location.search))
+    function getQueryParams() {                                                 // Enables bookmarking of template states
+      return Object.fromEntries(new URLSearchParams(window.location.search))    // Converts URL params to usable object
     }
 
-    function extractVariables(text) {
-      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]
-        .map(m => ({
-          name: m[1],
-          isArray: m[0].endsWith('*}')
+    // Extracts variable references from template strings using regex
+    // Variables can be regular {varName} or array-type {varName*}
+    function extractVariables(text) {                                           // Parses template syntax into data model
+      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Regex captures variable name and type
+        .map(m => ({                                                            // Transforms matches to structured data
+          name: m[1],                                                           // Name without the curly braces
+          isArray: m[0].endsWith('*}')                                          // Flag for array-type variables
         }));
     }
 
-    function createInputs() {
-      const container = document.getElementById('container');
-      container.innerHTML = '';
-      const params = getQueryParams();
+    // Main function that builds the entire UI based on the templates
+    // Creates input fields for variables and output fields for templates
+    // Establishes the reactive data flow between inputs and outputs
+    function createInputs() {                                                   // Orchestrates the UI generation
+      const container = document.getElementById('container');                   // Root element for the application
+      container.innerHTML = '';                                                 // Fresh start for the UI
+      const params = getQueryParams();                                          // Load state from URL if available
       
-      const processedVars = new Set();
-      const varDeps = new Map();
+      const processedVars = new Set();                                          // Tracks variables we've seen
+      const varDeps = new Map();                                                // Maps variables to dependent templates
       
-      templates.forEach(t => {
-        const templateName = Object.keys(t)[0];
-        const templateText = t[templateName];
-        const vars = extractVariables(templateText);
+      templates.forEach(t => {                                                  // Process each template definition
+        const templateName = Object.keys(t)[0];                                 // Templates are keyed by name
+        const templateText = t[templateName];                                   // The template string content
+        const vars = extractVariables(templateText);                            // Find variables in this template
         
-        vars.forEach(({name}) => {
-          if (!processedVars.has(name)) {
-            const div = document.createElement('div');
-            div.className = 'input-group';
+        // For each variable in this template, ensure it has an input field
+        // and track the dependency between the variable and this template
+        vars.forEach(({name}) => {                                              // For each variable in the template
+          if (!processedVars.has(name)) {                                       // First time seeing this variable?
+            const div = document.createElement('div');                          // Create input container
+            div.className = 'input-group';                                      // Apply styling and input field HTML
             div.innerHTML = `
               <label for="${name}">${name}:</label>
               <textarea id="${name}" name="${name}">${params[name] || ''}</textarea>
             `;
-            container.appendChild(div);
-            processedVars.add(name);
+            container.appendChild(div);                                         // Add to the DOM
+            processedVars.add(name);                                            // Mark as processed
             
-            const input = document.getElementById(name);
-            input.addEventListener('focus', e => e.target.select());
-            input.addEventListener('input', () => {
-              updateDependentTemplates(name, varDeps);
+            const input = document.getElementById(name);                        // Get the new textarea
+            input.addEventListener('focus', e => e.target.select());            // Auto-select on focus for UX
+            input.addEventListener('input', () => {                             // When input changes...
+              updateDependentTemplates(name, varDeps);                          // ...update affected templates
             });
           }
           
-          if (!varDeps.has(name)) {
-            varDeps.set(name, new Set());
+          // Build the dependency graph for reactive updates
+          if (!varDeps.has(name)) {                                             // First template using this variable
+            varDeps.set(name, new Set());                                       // Initialize dependency set
           }
-          varDeps.get(name).add(templateName);
+          varDeps.get(name).add(templateName);                                  // Add template to dependencies
         });
 
-        const arrayVar = vars.find(v => v.isArray);
-        if (arrayVar) {
-          const templateContainer = document.createElement('div');
-          templateContainer.id = `${templateName}-container`;
-          container.appendChild(templateContainer);
-          const lines = (params[arrayVar.name] || '').split('\n').filter(Boolean);
-          updateArrayTemplate(templateName, templateText, arrayVar.name, lines);
-        } else {
-          const div = document.createElement('div');
-          div.className = 'input-group';
+        // Handle the template output field creation
+        // Array templates get special handling with multiple instances
+        const arrayVar = vars.find(v => v.isArray);                             // Check for array variable usage
+        if (arrayVar) {                                                         // This is an array template
+          const templateContainer = document.createElement('div');              // Create container for instances
+          templateContainer.id = `${templateName}-container`;                   // Set ID for later reference
+          container.appendChild(templateContainer);                             // Add to DOM
+          const lines = (params[arrayVar.name] || '').split('\n').filter(Boolean); // Get array items
+          updateArrayTemplate(templateName, templateText, arrayVar.name, lines); // Create template instances
+        } else {                                                                // Regular (non-array) template
+          const div = document.createElement('div');                            // Create template container
+          div.className = 'input-group';                                        // Apply styling class and template HTML
           div.innerHTML = `
             <label for="${templateName}">${templateName}:</label>
             <textarea id="${templateName}" name="${templateName}">${templateText}</textarea>
           `;
-          container.appendChild(div);
+          container.appendChild(div);                                           // Add to DOM
           
           // Add focus handler to regular template
-          const textarea = div.querySelector('textarea');
-          textarea.addEventListener('focus', e => e.target.select());
+          const textarea = div.querySelector('textarea');                       // Get the output textarea
+          textarea.addEventListener('focus', e => e.target.select());           // Auto-select on focus for easy copy
         }
       });
     }
 
-    function updateArrayTemplate(templateName, templateText, arrayVarName, lines) {
-      const container = document.getElementById(`${templateName}-container`);
-      if (!container) return;
+    // Handles the special case of array templates
+    // Creates multiple instances of a template, one for each line in the array variable
+    // Each instance gets its own textarea with the template + current array item
+    function updateArrayTemplate(templateName, templateText, arrayVarName, lines) { // Handles array template expansion
+      const container = document.getElementById(`${templateName}-container`);    // Get the container element
+      if (!container) return;                                                   // Safety check
       
-      const values = Object.fromEntries(
-        Array.from(document.querySelectorAll('textarea'))
-          .map(input => [input.id, input.value])
+      // Get current values of all variables to use in template rendering
+      const values = Object.fromEntries(                                        // Create lookup table of values
+        Array.from(document.querySelectorAll('textarea'))                       // Find all textareas
+          .map(input => [input.id, input.value])                                // Map to [id, value] pairs
       );
       
-      container.innerHTML = '';
+      container.innerHTML = '';                                                 // Clear previous instances
       
-      lines.forEach((line, index) => {
-        const div = document.createElement('div');
-        div.className = 'input-group';
-        const instanceId = `${templateName}-${index}`;
+      // For each line in the array variable, create a template instance
+      lines.forEach((line, index) => {                                          // Process each array item
+        const div = document.createElement('div');                              // Create instance container
+        div.className = 'input-group';                                          // Apply styling class
+        const instanceId = `${templateName}-${index}`;                          // Generate unique ID
         
-        let processedText = templateText;
-        const vars = extractVariables(templateText);
-        vars.forEach(({name, isArray}) => {
-          if (!isArray) {
-            processedText = processedText.replace(
-              new RegExp(`{${name}}`, 'g'), 
-              values[name] || ''
+        // Process the template, replacing variables with their values
+        let processedText = templateText;                                       // Start with template text
+        const vars = extractVariables(templateText);                            // Find all variables
+        vars.forEach(({name, isArray}) => {                                     // For each variable
+          if (!isArray) {                                                       // If not the array variable
+            processedText = processedText.replace(                              // Replace all occurrences
+              new RegExp(`{${name}}`, 'g'),                                     // Create regex for the variable
+              values[name] || ''                                                // Use value or empty string
             );
           }
         });
         
-        processedText = processedText.replace(`{${arrayVarName}*}`, line);
-        
+        // Replace the array variable with the current line
+        processedText = processedText.replace(`{${arrayVarName}*}`, line);      // Insert current array item
+                                                                                // Build instance HTML
         div.innerHTML = `
           <label for="${instanceId}">${templateName}[${index}]:</label>
           <textarea id="${instanceId}" name="${instanceId}">${processedText}</textarea>
         `;
-        container.appendChild(div);
+        container.appendChild(div);                                             // Add to DOM
         
         // Add focus handler to array template instance
-        const textarea = div.querySelector('textarea');
-        textarea.addEventListener('focus', e => e.target.select());
+        const textarea = div.querySelector('textarea');                         // Get the instance textarea
+        textarea.addEventListener('focus', e => e.target.select());             // Auto-select on focus
       });
     }
 
-    function updateDependentTemplates(changedVar, varDeps) {
-      const values = Object.fromEntries(
-        Array.from(document.querySelectorAll('textarea'))
-          .map(input => [input.id, input.value])
+    // Implements the reactive update system
+    // When a variable changes, all templates that use it are updated
+    // This maintains the data flow from inputs to template outputs
+    function updateDependentTemplates(changedVar, varDeps) {                    // Reactive update system
+      // Get current values of all variables
+      const values = Object.fromEntries(                                        // Create lookup table of values
+        Array.from(document.querySelectorAll('textarea'))                       // Find all textareas
+          .map(input => [input.id, input.value])                                // Map to [id, value] pairs
       );
 
-      const dependentTemplates = varDeps.get(changedVar) || new Set();
-      dependentTemplates.forEach(templateName => {
-        const template = templates.find(t => Object.keys(t)[0] === templateName);
-        if (!template) return;
+      // Find and update all templates that depend on the changed variable
+      const dependentTemplates = varDeps.get(changedVar) || new Set();          // Get affected templates
+      dependentTemplates.forEach(templateName => {                              // For each dependent template
+        const template = templates.find(t => Object.keys(t)[0] === templateName); // Find template definition
+        if (!template) return;                                                  // Skip if not found
 
-        const text = template[templateName];
-        const vars = extractVariables(text);
-        const arrayVar = vars.find(v => v.isArray);
+        const text = template[templateName];                                    // Get template text
+        const vars = extractVariables(text);                                    // Find variables used
+        const arrayVar = vars.find(v => v.isArray);                             // Check for array variable
 
-        if (arrayVar) {
-          // Handle array template
-          const lines = (values[arrayVar.name] || '').split('\n').filter(Boolean);
-          updateArrayTemplate(templateName, text, arrayVar.name, lines);
-        } else {
-          // Handle regular template
-          const elem = document.getElementById(templateName);
-          if (elem) {
-            let result = text;
-            vars.forEach(({name}) => {
-              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || '');
+        if (arrayVar) {                                                         // If array template
+          // Handle array template - regenerate all instances
+          const lines = (values[arrayVar.name] || '').split('\n').filter(Boolean); // Get array items
+          updateArrayTemplate(templateName, text, arrayVar.name, lines);        // Update all instances
+        } else {                                                                // Regular template
+          // Handle regular template - update the single output
+          const elem = document.getElementById(templateName);                   // Get template element
+          if (elem) {                                                           // If it exists
+            let result = text;                                                  // Start with template text
+            vars.forEach(({name}) => {                                          // For each variable
+              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || ''); // Replace all occurrences
             });
-            elem.value = result;
+            elem.value = result;                                                // Update the output
           }
         }
       });
     }
-    createInputs()
+    createInputs()                                                              // Bootstrap the application
   </script>
 </body>
 </html>
