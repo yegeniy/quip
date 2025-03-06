@@ -16,10 +16,10 @@
     <!-- Will be populated by JavaScript -->
   </div>
   <script>
-    // QUIP is a template engine that creates a reactive UI for filling in templates with variables.
-    // Templates can reference variables with {varName} syntax and can iterate over arrays with {varName*}.
-    
-    const templates = [                                                         // Core data structure of the application
+    /* QUIP is a template engine that creates a reactive UI for filling in
+       templates with variables. Templates can reference variables with
+       {varName} syntax and can iterate over arrays with {varName*}. */
+    const templates = [                                                         // This array is filled in during build
             {
         'literate.0': 
 `I need to convert this code into a "literate programming" style annotations with
@@ -28,6 +28,7 @@ insightful architectural commentary. Please:
 1. Format each line as: "code (padded to 80 chars)    // comment (max 37 chars)"
 - Total line width should be exactly 120 characters 
 - Format: printf("%-80s// %s\n", code, comment);
+- Note // is just an example of a comment. Use the one appropriate for the lang.
 
 2. For the comments: 
 - Don't just restate what the code does
@@ -62,7 +63,7 @@ insightful architectural commentary. Please:
 
     // Extracts variable references from template strings using regex
     // Variables can be regular {varName} or array-type {varName*}
-    function extractVariables(text) {                                           // Parses template syntax into data model
+    function extractVariables(text) {                                           // Parses template syntax to data model
       return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Regex captures variable name and type
         .map(m => ({                                                            // Transforms matches to structured data
           name: m[1],                                                           // Name without the curly braces

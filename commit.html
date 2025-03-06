@@ -21,14 +21,51 @@
        {varName} syntax and can iterate over arrays with {varName*}. */
     const templates = [                                                         // This array is filled in during build
             {
-        'gist.0': 
-`{LINK}
+        'commit.0': 
+`TASK: Write a git commit message for the DIFF attached at the end of this task using the styleguide below. 
 
-please give the gist of this post as a paragraph or two, max. without any of the author’s “flourish”. What is it saying? You MUST do it In two paragraphs or less
+STYLEGUIDE:
 
-here are the contents in case you can’t access it:
+As a general rule, your messages should start with a single line that’s  no more than about 50 characters and that describes the changeset  concisely, followed by a blank line, followed by a more detailed  explanation. The Git project requires that the more detailed explanation include your  motivation for the change and contrast its implementation with previous  behavior - this is a good guideline to follow. Write your commit message in the imperative: "Fix bug" and not "Fixed bug" or "Fixes bug." Here is a template you can follow, which we’ve lightly adapted from one originally written by Tim Pope:
 
-{CONTENTS}`
+```md
+Capitalized, short (50 chars or less) summary
+
+More detailed explanatory text, if necessary.  Wrap it to about 72
+characters or so.  In some contexts, the first line is treated as the
+subject of an email and the rest of the text as the body.  The blank
+line separating the summary from the body is critical (unless you omit
+the body entirely); tools like rebase will confuse you if you run the
+two together.
+
+Write your commit message in the imperative: "Fix bug" and not "Fixed bug"
+or "Fixes bug."  This convention matches up with commit messages generated
+by commands like git merge and git revert.
+
+Further paragraphs come after blank lines.
+
+- Bullet points are okay, too
+
+- Typically a hyphen or asterisk is used for the bullet, followed by a
+  single space, with blank lines in between, but conventions vary here
+
+- Use a hanging indent
+
+```
+
+The diff follows:
+
+```diff
+{DIFF=`git show --format="" -p --stat HEAD`}
+````
+      },
+      {
+        'commit.1': 
+`Now, rewrite it so that it conforms to the following requirements:
+
+1) The first line MUST be 50 characters or less.
+2) Subsequent lines must be wrapped at 72 characters.
+3) You must output nothing but the message, so it can be copied.`
       },
  
     ]

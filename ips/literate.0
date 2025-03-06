@@ -4,6 +4,7 @@ insightful architectural commentary. Please:
 1. Format each line as: "code (padded to 80 chars)    // comment (max 37 chars)"
 - Total line width should be exactly 120 characters 
 - Format: printf("%-80s// %s\n", code, comment);
+- Note // is just an example of a comment. Use the one appropriate for the lang.
 
 2. For the comments: 
 - Don't just restate what the code does
