@@ -29,11 +29,22 @@
 
     // Extracts variable references from template strings using regex
     // Variables can be regular {varName} or array-type {varName*}
+    /*
+      '{FOO*=bar}',
+      '{ARRAY*}',
+      '{SIMPLE}',
+      '{DIFF=`git show --format="" -p --stat HEAD`}',
+      '{CMD=`ls -l`}',
+      '{TEST=hello}',
+      '{ARRAY*=world}'
+    */
     function extractVariables(text) {                                           // Parses template syntax to data model
-      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Regex captures variable name and type
+      // return [...text.matchAll(/{([A-z_][A-z0-9_]*)(\*?)(?:\=([^}])+)?}/g)]     // Regex captures variable name and type
+      return [...text.matchAll(/{([A-z_][A-z0-9_]*)(\*?)(?:\=([^}])+)?}/g)]     // Regex captures variable name and type
         .map(m => ({                                                            // Transforms matches to structured data
           name: m[1],                                                           // Name without the curly braces
-          isArray: m[0].endsWith('*}')                                          // Flag for array-type variables
+          isArray: m[2] === '*',                                               // Flag for array-type variables
+          placeholder: m[3] ? m[3].split('=',1)[1] : '',
         }));
     }
 
@@ -55,13 +66,14 @@
         
         // For each variable in this template, ensure it has an input field
         // and track the dependency between the variable and this template
-        vars.forEach(({name}) => {                                              // For each variable in the template
+        vars.forEach(({name, placeholder}) => {                                 // For each variable in the template
+          console.log(`${name} -> ${placeholder}`)
           if (!processedVars.has(name)) {                                       // First time seeing this variable?
-            const div = document.createElement('div');                          // Create input container
-            div.className = 'input-group';                                      // Apply styling and input field HTML
+            const div = document.createElement('div');                          // Create input container for the var,
+            div.className = 'input-group';                                      // and label it so it is bold!
             div.innerHTML = `
-              <label for="${name}">${name}:</label>
-              <textarea id="${name}" name="${name}">${params[name] || ''}</textarea>
+              <label for="${name}"><strong>${name}</strong>:</label>
+              <textarea id="${name}" name="${name}">${params[name] || placeholder || ''}</textarea>
             `;
             container.appendChild(div);                                         // Add to the DOM
             processedVars.add(name);                                            // Mark as processed
@@ -87,11 +99,11 @@
           const templateContainer = document.createElement('div');              // Create container for instances
           templateContainer.id = `${templateName}-container`;                   // Set ID for later reference
           container.appendChild(templateContainer);                             // Add to DOM
-          const lines = (params[arrayVar.name] || '').split('\n').filter(Boolean); // Get array items
-          updateArrayTemplate(templateName, templateText, arrayVar.name, lines); // Create template instances
+          const lines = (params[arrayVar.name]||'').split('\n').filter(Boolean);// Get array items
+          updateArrayTemplate(templateName, templateText, arrayVar.name, lines);// Create template instances
         } else {                                                                // Regular (non-array) template
           const div = document.createElement('div');                            // Create template container
-          div.className = 'input-group';                                        // Apply styling class and template HTML
+          div.className = 'input-group';                                        // for the 
           div.innerHTML = `
             <label for="${templateName}">${templateName}:</label>
             <textarea id="${templateName}" name="${templateName}">${templateText}</textarea>
@@ -183,7 +195,8 @@
           if (elem) {                                                           // If it exists
             let result = text;                                                  // Start with template text
             vars.forEach(({name}) => {                                          // For each variable
-              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || ''); // Replace all occurrences
+              const r = new RegExp(`{${name}}`, 'g');                           // Find all occurrences of it
+              result = result.replace(r, values[name] || '');                   // and replace with its value or nothing
             });
             elem.value = result;                                                // Update the output
           }
