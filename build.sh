@@ -16,7 +16,7 @@ $indent  '$name.$(basename $f | cut -d. -f2)':
 $indent},
 "
   done  
-  content=$(cat template.html)
+  content=$(cat _template.html)
   printf "%s" "${content/__QUIP__/$quip}" > "$name.html"
 done
 
@@ -24,3 +24,5 @@ done
 for f in *.html; do
   echo "<li><a href=\"$f\">$f</a></li>"
 done > index.html
+
+cat _favorites.html >> index.html

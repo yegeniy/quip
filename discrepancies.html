@@ -39,7 +39,12 @@ POSTING:
       {
         'discrepancies.1': 
 `Generate an ordered list of discrepancies between the job posting and the resume.
-Wrap them in a codeblock \`\`\` to make it easier to copy.`
+A few rules you must follow:
+
+- Each discrepancy must be on a single line.
+- Prefix the discrepancies with this exactly: Quiz me on this discrepancy between the resume and the job posting, like at an interview.
+- Wrap everything in a codeblock \`\`\`yaml to make it easier to copy.
+- Interleave each line with this line exactly: answer them assuming I don't have the experience, but do have the knowldege`
       },
       {
         'discrepancies.2': 
@@ -57,10 +62,12 @@ Use follow up questions and help me learn if I don't know enough.`
     // Extracts variable references from template strings using regex
     // Variables can be regular {varName} or array-type {varName*}
     function extractVariables(text) {                                           // Parses template syntax to data model
-      return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Regex captures variable name and type
+      return [...text.matchAll(/{([A-z_][A-z0-9_]*)(\*?)(?:\=([^}]+))?}/g)]     // Find {var} name/array/placeholder
+      // return [...text.matchAll(/{([A-z_][A-z0-9_]*)\*?}/g)]                     // Find {var} name/array/placeholder
         .map(m => ({                                                            // Transforms matches to structured data
           name: m[1],                                                           // Name without the curly braces
-          isArray: m[0].endsWith('*}')                                          // Flag for array-type variables
+          explodes: Boolean(m[2]),                                              // Flag for array-type variables
+          placeholder: m[3] || ""                                               // Optional placeholder defaulting to ""
         }));
     }
 
@@ -82,13 +89,14 @@ Use follow up questions and help me learn if I don't know enough.`
         
         // For each variable in this template, ensure it has an input field
         // and track the dependency between the variable and this template
-        vars.forEach(({name}) => {                                              // For each variable in the template
+        vars.forEach(({name, placeholder}) => {                                 // For each variable in the template
+          console.log(name, placeholder)
           if (!processedVars.has(name)) {                                       // First time seeing this variable?
             const div = document.createElement('div');                          // Create input container
             div.className = 'input-group';                                      // Apply styling and input field HTML
             div.innerHTML = `
-              <label for="${name}">${name}:</label>
-              <textarea id="${name}" name="${name}">${params[name] || ''}</textarea>
+              <label for="${name}"><strong>${name}:</strong></label>
+              <textarea id="${name}" name="${name}">${params[name] || placeholder}</textarea>
             `;
             container.appendChild(div);                                         // Add to the DOM
             processedVars.add(name);                                            // Mark as processed
@@ -98,6 +106,9 @@ Use follow up questions and help me learn if I don't know enough.`
             input.addEventListener('input', () => {                             // When input changes...
               updateDependentTemplates(name, varDeps);                          // ...update affected templates
             });
+            input.addEventListener('blur', () => {                              // When leaving input changes...
+              updateDependentTemplates(name, varDeps);                          // ...update affected templates
+            });                                                                 // so that it overwrites placeholders.
           }
           
           // Build the dependency graph for reactive updates
@@ -109,7 +120,7 @@ Use follow up questions and help me learn if I don't know enough.`
 
         // Handle the template output field creation
         // Array templates get special handling with multiple instances
-        const arrayVar = vars.find(v => v.isArray);                             // Check for array variable usage
+        const arrayVar = vars.find(v => v.explodes);                             // Check for array variable usage
         if (arrayVar) {                                                         // This is an array template
           const templateContainer = document.createElement('div');              // Create container for instances
           templateContainer.id = `${templateName}-container`;                   // Set ID for later reference
@@ -156,10 +167,11 @@ Use follow up questions and help me learn if I don't know enough.`
         // Process the template, replacing variables with their values
         let processedText = templateText;                                       // Start with template text
         const vars = extractVariables(templateText);                            // Find all variables
-        vars.forEach(({name, isArray}) => {                                     // For each variable
-          if (!isArray) {                                                       // If not the array variable
+        vars.forEach(({name, explodes}) => {                                     // For each variable
+          if (!explodes) {                                                       // If not the array variable
+            // FIXME: DRY with updateDependentTemplates
             processedText = processedText.replace(                              // Replace all occurrences
-              new RegExp(`{${name}}`, 'g'),                                     // Create regex for the variable
+              new RegExp(`{${name}[^}]+}}`, 'g'),                               // Create regex for the variable
               values[name] || ''                                                // Use value or empty string
             );
           }
@@ -198,7 +210,7 @@ Use follow up questions and help me learn if I don't know enough.`
 
         const text = template[templateName];                                    // Get template text
         const vars = extractVariables(text);                                    // Find variables used
-        const arrayVar = vars.find(v => v.isArray);                             // Check for array variable
+        const arrayVar = vars.find(v => v.explodes);                             // Check for array variable
 
         if (arrayVar) {                                                         // If array template
           // Handle array template - regenerate all instances
@@ -210,7 +222,8 @@ Use follow up questions and help me learn if I don't know enough.`
           if (elem) {                                                           // If it exists
             let result = text;                                                  // Start with template text
             vars.forEach(({name}) => {                                          // For each variable
-              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || ''); // Replace all occurrences
+              result = result.replace(new RegExp(`{${name}[^}]+}`, 'g'),        // Replace all occurrences
+                                      values[name] || '');
             });
             elem.value = result;                                                // Update the output
           }
