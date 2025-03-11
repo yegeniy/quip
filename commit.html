@@ -186,7 +186,7 @@ The diff follows:
           if (!explodes) {                                                       // If not the array variable
             // FIXME: DRY with updateDependentTemplates
             processedText = processedText.replace(                              // Replace all occurrences
-              new RegExp(`{${name}[^}]+}}`, 'g'),                               // Create regex for the variable
+              new RegExp(`{${name}[^}]*}`, 'g'),                               // Create regex for the variable
               values[name] || ''                                                // Use value or empty string
             );
           }
@@ -237,7 +237,7 @@ The diff follows:
           if (elem) {                                                           // If it exists
             let result = text;                                                  // Start with template text
             vars.forEach(({name}) => {                                          // For each variable
-              result = result.replace(new RegExp(`{${name}[^}]+}`, 'g'),        // Replace all occurrences
+              result = result.replace(new RegExp(`{${name}[^}]*}`, 'g'),        // Replace all occurrences
                                       values[name] || '');
             });
             elem.value = result;                                                // Update the output
