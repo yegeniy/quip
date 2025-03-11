@@ -74,6 +74,9 @@
             input.addEventListener('input', () => {                             // When input changes...
               updateDependentTemplates(name, varDeps);                          // ...update affected templates
             });
+            input.addEventListener('blur', () => {                              // When leaving input changes...
+              updateDependentTemplates(name, varDeps);                          // ...update affected templates
+            });                                                                 // so that it overwrites placeholders.
           }
           
           // Build the dependency graph for reactive updates
@@ -134,8 +137,9 @@
         const vars = extractVariables(templateText);                            // Find all variables
         vars.forEach(({name, explodes}) => {                                     // For each variable
           if (!explodes) {                                                       // If not the array variable
+            // FIXME: DRY with updateDependentTemplates
             processedText = processedText.replace(                              // Replace all occurrences
-              new RegExp(`{${name}}`, 'g'),                                     // Create regex for the variable
+              new RegExp(`{${name}[^}]+}}`, 'g'),                               // Create regex for the variable
               values[name] || ''                                                // Use value or empty string
             );
           }
@@ -186,7 +190,8 @@
           if (elem) {                                                           // If it exists
             let result = text;                                                  // Start with template text
             vars.forEach(({name}) => {                                          // For each variable
-              result = result.replace(new RegExp(`{${name}}`, 'g'), values[name] || ''); // Replace all occurrences
+              result = result.replace(new RegExp(`{${name}[^}]+}`, 'g'),        // Replace all occurrences
+                                      values[name] || '');
             });
             elem.value = result;                                                // Update the output
           }
