@@ -5,7 +5,7 @@
   <style>
     body{margin:20px;font-family:sans-serif;}
     #container{display:flex;flex-direction:column;gap:10px;}
-    textarea{width:100%;min-height:600px;margin-top:10px;width:80ch;}
+    textarea{width:100%;min-height:120px;margin-top:10px;width:80ch;}
     .input-group{display:flex;gap:10px;align-items:start;}
     label{min-width:100px;padding-top:5px;}
     .input-group textarea{min-height:60px;} /* Input textareas smaller than main */
@@ -104,13 +104,13 @@ insightful architectural commentary. Please:
             processedVars.add(name);                                            // Mark as processed
             
             const input = document.getElementById(name);                        // Get the new textarea
-            input.addEventListener('focus', e => e.target.select());            // Auto-select on focus for UX
+            input.addEventListener('focus', e => {
+              e.target.select()            // Auto-select on focus for UX
+              updateDependentTemplates(name, varDeps);
+            });
             input.addEventListener('input', () => {                             // When input changes...
               updateDependentTemplates(name, varDeps);                          // ...update affected templates
             });
-            input.addEventListener('blur', () => {                              // When leaving input changes...
-              updateDependentTemplates(name, varDeps);                          // ...update affected templates
-            });                                                                 // so that it overwrites placeholders.
           }
           
           // Build the dependency graph for reactive updates
@@ -131,7 +131,7 @@ insightful architectural commentary. Please:
           updateArrayTemplate(templateName, templateText, arrayVar.name, lines); // Create template instances
         } else {                                                                // Regular (non-array) template
           const div = document.createElement('div');                            // Create template container
-          div.className = 'input-group';                                        // Apply styling class and template HTML
+          // div.className = 'input-group';                                        // Apply styling class and template HTML
           div.innerHTML = `
             <label for="${templateName}">${templateName}:</label>
             <textarea id="${templateName}" name="${templateName}">${templateText}</textarea>
@@ -163,7 +163,7 @@ insightful architectural commentary. Please:
       // For each line in the array variable, create a template instance
       lines.forEach((line, index) => {                                          // Process each array item
         const div = document.createElement('div');                              // Create instance container
-        div.className = 'input-group';                                          // Apply styling class
+        // div.className = 'input-group';                                          // Apply styling class
         const instanceId = `${templateName}-${index}`;                          // Generate unique ID
         
         // Process the template, replacing variables with their values
